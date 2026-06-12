@@ -26,10 +26,14 @@ if ("serviceWorker" in navigator) {
        min-height:60px;">
 </div>
 
-  <script>
-    document.getElementById('mic').onclick = () => {
-      alert('Voice recording will be added next.');
-    };
-  </script>
+  <div id="output"></div>
+
+<script src="app.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js");
+}
+</script>
 </body>
 </html>
