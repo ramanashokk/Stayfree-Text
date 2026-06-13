@@ -18,13 +18,13 @@
 </head>
 <body>
   <div id="root"></div>
-
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
+
+    const WORKER_URL = 'https://flow-proxy.sales003.workers.dev';
 
     const CONTEXTS = [
       { id: "message", label: "Message" },
@@ -53,82 +53,31 @@
         COMMANDS.some(c => lower.startsWith(c) || lower.includes(c));
     }
 
-    /* ── Setup screen ──────────────────────────────────────── */
-    function Setup({ onSave }) {
-      const [key, setKey]       = useState("");
-      const [error, setError]   = useState("");
-      const [testing, setTesting] = useState(false);
-
-      const save = async () => {
-        const k = key.trim();
-        if (!k.startsWith("gsk_")) { setError("Groq keys start with gsk_"); return; }
-        setTesting(true); setError("");
-        try {
-          const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${k}` },
-            body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: "hi" }], max_tokens: 5 }),
-          });
-          if (!res.ok) throw new Error();
-          localStorage.setItem("flow_groq_key", k);
-          onSave(k);
-        } catch { setError("Key invalid or network error."); }
-        finally { setTesting(false); }
-      };
-
-      return (
-        <div style={{ minHeight:"100vh", background:"#080809", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"system-ui,-apple-system,sans-serif", padding:"32px 24px" }}>
-          <div style={{ width:"100%", maxWidth:400 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:44 }}>
-              <span style={{ fontSize:16, fontWeight:600, color:"#E4E4E8" }}>Flow</span>
-              <div style={{ width:5, height:5, borderRadius:"50%", background:"#FF5200" }} />
-            </div>
-            <div style={{ fontSize:18, fontWeight:600, color:"#E4E4E8", marginBottom:8 }}>Enter your Groq API key</div>
-            <div style={{ fontSize:12, color:"#333", lineHeight:1.7, marginBottom:28 }}>
-              Free at <span style={{ color:"#FF6830" }}>console.groq.com</span> → API Keys → Create.<br/>
-              No credit card. Stored only on this device.
-            </div>
-            <input
-              type="password" placeholder="gsk_..."
-              value={key} onChange={e => { setKey(e.target.value); setError(""); }}
-              onKeyDown={e => e.key === "Enter" && save()}
-              style={{ width:"100%", padding:"12px 14px", borderRadius:10, border: error ? "1px solid rgba(255,68,68,0.4)" : "1px solid #1E1E22", background:"#0E0E10", color:"#D4D4D8", fontSize:13, fontFamily:"ui-monospace,monospace", outline:"none", marginBottom:10, WebkitAppearance:"none" }}
-            />
-            {error && <div style={{ fontSize:11, color:"#FF4444", marginBottom:10 }}>{error}</div>}
-            <button onClick={save} disabled={testing || !key.trim()} style={{ width:"100%", padding:13, borderRadius:10, border:"none", background: testing || !key.trim() ? "#1A1A1E" : "#FF5200", color: testing || !key.trim() ? "#333" : "#fff", fontSize:13, fontWeight:600, cursor: testing || !key.trim() ? "not-allowed" : "pointer", fontFamily:"inherit" }}>
-              {testing ? "Checking..." : "Save & continue"}
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    /* ── Main app ──────────────────────────────────────────── */
-    function App({ apiKey, onReset }) {
+    function App() {
       const [isRecording, setIsRecording] = useState(false);
       const [rawTranscript, setRawTranscript] = useState("");
-      const [cleanedText, setCleanedText]   = useState("");
-      const [context, setContext]           = useState("message");
-      const [status, setStatus]             = useState("idle");
-      const [copied, setCopied]             = useState(false);
-      const [supported, setSupported]       = useState(true);
-      const [showSettings, setShowSettings] = useState(false);
+      const [cleanedText, setCleanedText] = useState("");
+      const [context, setContext] = useState("message");
+      const [status, setStatus] = useState("idle");
+      const [copied, setCopied] = useState(false);
+      const [supported, setSupported] = useState(true);
 
-      const recRef       = useRef(null);
-      const finalRef     = useRef("");
-      const interimRef   = useRef("");
+      const recRef = useRef(null);
+      const finalRef = useRef("");
+      const interimRef = useRef("");
       const recordingRef = useRef(false);
-      const cleanedRef   = useRef("");
-      const contextRef   = useRef("message");
+      const cleanedRef = useRef("");
+      const contextRef = useRef("message");
 
-      useEffect(() => { cleanedRef.current  = cleanedText; }, [cleanedText]);
-      useEffect(() => { contextRef.current  = context;     }, [context]);
+      useEffect(() => { cleanedRef.current = cleanedText; }, [cleanedText]);
+      useEffect(() => { contextRef.current = context; }, [context]);
 
       useEffect(() => {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) { setSupported(false); return; }
         const rec = new SR();
-        rec.continuous = true; rec.interimResults = true;
+        rec.continuous = true;
+        rec.interimResults = true;
         rec.onresult = (e) => {
           let nf = "", interim = "";
           for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -160,15 +109,19 @@
         const ctx = contextRef.current;
         const isCmd = isCommand(raw, !!existing);
         const messages = isCmd && existing
-          ? [{ role:"system", content:"Apply the user's instruction to the text. Return ONLY the modified text." },
-             { role:"user",   content:`Text:\n"${existing}"\n\nInstruction: ${raw}` }]
-          : [{ role:"system", content:`Clean this raw voice transcript for use as ${CONTEXT_PROMPTS[ctx]} Remove filler words (um, uh, like, you know, so, basically, right, anyway, etc.) and fix grammar. Do not add content. Return ONLY the cleaned text.` },
-             { role:"user",   content: raw }];
+          ? [
+              { role: "system", content: "Apply the user's instruction to the text. Return ONLY the modified text." },
+              { role: "user", content: 'Text:\n"' + existing + '"\n\nInstruction: ' + raw }
+            ]
+          : [
+              { role: "system", content: "Clean this raw voice transcript for use as " + CONTEXT_PROMPTS[ctx] + " Remove filler words (um, uh, like, you know, so, basically, right, anyway, etc.) and fix grammar. Do not add content. Return ONLY the cleaned text." },
+              { role: "user", content: raw }
+            ];
         try {
-          const res  = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${apiKey}` },
-            body: JSON.stringify({ model:"llama-3.3-70b-versatile", messages, max_tokens:1000, temperature:0.3 }),
+          const res = await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages, max_tokens: 1000, temperature: 0.3 })
           });
           const data = await res.json();
           const text = data.choices?.[0]?.message?.content?.trim();
@@ -192,11 +145,11 @@
         finalRef.current = ""; interimRef.current = ""; setStatus("idle");
       };
 
-      const hint = !supported           ? "not supported in this browser"
-        : status === "processing"       ? "cleaning..."
-        : isRecording                   ? "tap to stop"
-        : status === "done"             ? "speak again or give a command"
-        :                                 "tap to speak";
+      const hint = !supported ? "not supported in this browser"
+        : status === "processing" ? "cleaning..."
+        : isRecording ? "tap to stop"
+        : status === "done" ? "speak again or give a command"
+        : "tap to speak";
 
       const BARS = [6, 12, 18, 12, 6];
 
@@ -211,27 +164,14 @@
             .sm{transition:opacity .1s;outline:none} .sm:hover{opacity:.65}
           `}</style>
 
-          {/* Header */}
-          <div style={{ width:"100%", maxWidth:480, marginBottom:36, display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-            <div>
-              <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-                <span style={{ fontSize:15, fontWeight:600, letterSpacing:-0.3, color:"#E4E4E8" }}>Flow</span>
-                <div style={{ width:5, height:5, borderRadius:"50%", background:"#FF5200" }} />
-              </div>
-              <div style={{ fontSize:9, color:"#222224", letterSpacing:2.5, textTransform:"uppercase", marginTop:3 }}>speak · clean · use</div>
+          <div style={{ width:"100%", maxWidth:480, marginBottom:36 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+              <span style={{ fontSize:15, fontWeight:600, letterSpacing:-0.3, color:"#E4E4E8" }}>Flow</span>
+              <div style={{ width:5, height:5, borderRadius:"50%", background:"#FF5200" }} />
             </div>
-            <button className="sm" onClick={() => setShowSettings(s => !s)} style={{ background:"transparent", border:"1px solid #1A1A1E", borderRadius:8, padding:"4px 10px", color:"#2A2A30", fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>⚙ key</button>
+            <div style={{ fontSize:9, color:"#222224", letterSpacing:2.5, textTransform:"uppercase", marginTop:3 }}>speak · clean · use</div>
           </div>
 
-          {/* Settings panel */}
-          {showSettings && (
-            <div style={{ width:"100%", maxWidth:480, background:"#0E0E10", borderRadius:12, border:"1px solid #1A1A1E", padding:16, marginBottom:20, fontSize:11, color:"#333" }}>
-              <div style={{ marginBottom:10 }}>API key: <span style={{ fontFamily:"monospace", color:"#2A2A30" }}>gsk_••••••••{apiKey.slice(-6)}</span></div>
-              <button className="sm" onClick={onReset} style={{ background:"transparent", border:"1px solid #1E1E22", borderRadius:6, padding:"4px 10px", color:"#333", fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>Change key</button>
-            </div>
-          )}
-
-          {/* Context pills */}
           <div style={{ display:"flex", gap:6, marginBottom:24, width:"100%", maxWidth:480, flexWrap:"wrap" }}>
             {CONTEXTS.map(c => (
               <button key={c.id} className="pill" onClick={() => setContext(c.id)} style={{ padding:"5px 13px", borderRadius:20, border: context===c.id ? "1px solid rgba(255,82,0,0.5)" : "1px solid #1C1C20", background: context===c.id ? "rgba(255,82,0,0.07)" : "transparent", color: context===c.id ? "#FF6830" : "#323238", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>
@@ -240,7 +180,6 @@
             ))}
           </div>
 
-          {/* Output card */}
           <div style={{ width:"100%", maxWidth:480, background:"#0E0E10", borderRadius:14, border:"1px solid #171719", padding:22, marginBottom:16, minHeight:172, display:"flex", flexDirection:"column" }}>
             {!cleanedText && (
               <div style={{ color:"#222226", fontSize:14, lineHeight:1.65, flex:1 }}>
@@ -254,21 +193,19 @@
                 <button className="sm" onClick={reset} style={{ padding:"4px 12px", borderRadius:6, border:"1px solid #141416", background:"transparent", color:"#222226", fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>Clear</button>
               </div>
             </>)}
-            {status==="error" && <div style={{ color:"#FF4444", fontSize:12, marginTop: cleanedText ? 10 : 0 }}>Failed. Check your key or try again.</div>}
+            {status==="error" && <div style={{ color:"#FF4444", fontSize:12, marginTop: cleanedText ? 10 : 0 }}>Failed. Try again.</div>}
           </div>
 
-          {/* Raw transcript */}
           {isRecording && rawTranscript && (
             <div style={{ width:"100%", maxWidth:480, marginBottom:10, fontSize:10, color:"#1E1E22", fontFamily:"ui-monospace,monospace", lineHeight:1.55, padding:"0 2px", wordBreak:"break-word" }}>{rawTranscript}</div>
           )}
 
-          {/* Record button */}
           <div style={{ position:"relative", display:"flex", alignItems:"center", justifyContent:"center", marginTop:28, marginBottom:14 }}>
             {isRecording && <div style={{ position:"absolute", width:72, height:72, borderRadius:"50%", border:"1px solid rgba(255,82,0,0.25)", animation:"ringExpand 1.5s ease-out infinite", pointerEvents:"none" }} />}
 
             {isRecording && (
               <div style={{ position:"absolute", right:90, display:"flex", alignItems:"center", gap:2.5, height:26 }}>
-                {BARS.map((h,i) => <div key={i} style={{ width:2.5, height:h, background:"rgba(255,82,0,0.45)", borderRadius:2, animation:`barPulse ${0.65+i*0.07}s ease-in-out ${i*0.09}s infinite`, transformOrigin:"center" }} />)}
+                {BARS.map((h,i) => <div key={i} style={{ width:2.5, height:h, background:"rgba(255,82,0,0.45)", borderRadius:2, animation:"barPulse " + (0.65+i*0.07) + "s ease-in-out " + (i*0.09) + "s infinite", transformOrigin:"center" }} />)}
               </div>
             )}
 
@@ -289,7 +226,7 @@
 
             {isRecording && (
               <div style={{ position:"absolute", left:90, display:"flex", alignItems:"center", gap:2.5, height:26 }}>
-                {BARS.map((h,i) => <div key={i} style={{ width:2.5, height:h, background:"rgba(255,82,0,0.45)", borderRadius:2, animation:`barPulse ${0.65+i*0.07}s ease-in-out ${(i+2.5)*0.09}s infinite`, transformOrigin:"center" }} />)}
+                {BARS.map((h,i) => <div key={i} style={{ width:2.5, height:h, background:"rgba(255,82,0,0.45)", borderRadius:2, animation:"barPulse " + (0.65+i*0.07) + "s ease-in-out " + ((i+2.5)*0.09) + "s infinite", transformOrigin:"center" }} />)}
               </div>
             )}
           </div>
@@ -304,23 +241,8 @@
       );
     }
 
-    /* ── Root ──────────────────────────────────────────────── */
-    function Root() {
-      const [apiKey, setApiKey] = useState(null);
-      const [loading, setLoading] = useState(true);
-      useEffect(() => {
-        const k = localStorage.getItem("flow_groq_key");
-        if (k) setApiKey(k);
-        setLoading(false);
-      }, []);
-      const handleReset = () => { localStorage.removeItem("flow_groq_key"); setApiKey(null); };
-      if (loading) return null;
-      return apiKey ? <App apiKey={apiKey} onReset={handleReset} /> : <Setup onSave={setApiKey} />;
-    }
-
-    ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
-
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
