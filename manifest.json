@@ -1,13 +1,13 @@
 {
-  "name": "Flow · Stayfree",
-  "short_name": "Flow",
+  "name": "Stayfree Text",
+  "short_name": "Stayfree Text",
   "description": "Speak. Clean. Use.",
   "start_url": "/Stayfree/",
   "scope": "/Stayfree/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#080809",
-  "theme_color": "#080809",
+  "background_color": "#0D0D0F",
+  "theme_color": "#0D0D0F",
   "icons": [
     {
       "src": "icon.svg",
