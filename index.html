@@ -169,7 +169,7 @@
               <span style={{ fontSize:15, fontWeight:600, letterSpacing:-0.3, color:"#E4E4E8" }}>Stayfree</span>
               <span style={{ fontSize:15, fontWeight:300, color:"#FF5200", letterSpacing:-0.3 }}>Text</span>
             </div>
-            <div style={{ fontSize:9, color:"#222224", letterSpacing:2.5, textTransform:"uppercase", marginTop:3 }}>speak · clean · use</div>
+            <div style={{ fontSize:9, color:"#444450", letterSpacing:2.5, textTransform:"uppercase", marginTop:3 }}>speak · clean · use</div>
           </div>
 
           <div style={{ display:"flex", gap:6, marginBottom:24, width:"100%", maxWidth:480, flexWrap:"wrap" }}>
@@ -182,7 +182,7 @@
 
           <div style={{ width:"100%", maxWidth:480, background:"#0E0E10", borderRadius:14, border:"1px solid #171719", padding:22, marginBottom:16, minHeight:172, display:"flex", flexDirection:"column" }}>
             {!cleanedText && (
-              <div style={{ color:"#222226", fontSize:14, lineHeight:1.65, flex:1 }}>
+              <div style={{ color:"#555560", fontSize:14, lineHeight:1.65, flex:1 }}>
                 {status==="recording" ? "Listening..." : status==="processing" ? "Cleaning..." : "Speak — cleaned text appears here."}
               </div>
             )}
@@ -190,14 +190,14 @@
               <div style={{ fontSize:14, lineHeight:1.8, fontFamily:"ui-monospace,'Cascadia Code',monospace", color:"#D4D4D8", flex:1, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{cleanedText}</div>
               <div style={{ display:"flex", gap:6, marginTop:18, justifyContent:"flex-end" }}>
                 <button className="sm" onClick={copy} style={{ padding:"4px 12px", borderRadius:6, border: copied ? "1px solid rgba(255,82,0,0.35)" : "1px solid #1C1C20", background:"transparent", color: copied ? "#FF6830" : "#2E2E34", fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>{copied ? "Copied ✓" : "Copy"}</button>
-                <button className="sm" onClick={reset} style={{ padding:"4px 12px", borderRadius:6, border:"1px solid #141416", background:"transparent", color:"#222226", fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>Clear</button>
+                <button className="sm" onClick={reset} style={{ padding:"4px 12px", borderRadius:6, border:"1px solid #141416", background:"transparent", color:"#555560", fontSize:10, cursor:"pointer", fontFamily:"inherit" }}>Clear</button>
               </div>
             </>)}
             {status==="error" && <div style={{ color:"#FF4444", fontSize:12, marginTop: cleanedText ? 10 : 0 }}>Failed. Try again.</div>}
           </div>
 
           {isRecording && rawTranscript && (
-            <div style={{ width:"100%", maxWidth:480, marginBottom:10, fontSize:10, color:"#1E1E22", fontFamily:"ui-monospace,monospace", lineHeight:1.55, padding:"0 2px", wordBreak:"break-word" }}>{rawTranscript}</div>
+            <div style={{ width:"100%", maxWidth:480, marginBottom:10, fontSize:10, color:"#555560", fontFamily:"ui-monospace,monospace", lineHeight:1.55, padding:"0 2px", wordBreak:"break-word" }}>{rawTranscript}</div>
           )}
 
           <div style={{ position:"relative", display:"flex", alignItems:"center", justifyContent:"center", marginTop:28, marginBottom:14 }}>
@@ -231,9 +231,9 @@
             )}
           </div>
 
-          <div style={{ fontSize:10, color:"#1E1E22", letterSpacing:0.3 }}>{hint}</div>
+          <div style={{ fontSize:10, color:"#555560", letterSpacing:0.3 }}>{hint}</div>
           {status==="done" && cleanedText && (
-            <div style={{ fontSize:9, color:"#18181C", marginTop:14, maxWidth:264, textAlign:"center", lineHeight:1.7 }}>
+            <div style={{ fontSize:9, color:"#555560", marginTop:14, maxWidth:264, textAlign:"center", lineHeight:1.7 }}>
               "make it shorter" · "more formal" · "translate to Hindi"
             </div>
           )}
