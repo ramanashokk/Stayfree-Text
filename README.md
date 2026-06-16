@@ -1,8 +1,5 @@
-# Stayfree
+# Stayfree (AI-powered voice-to-text PWA.)
 
-AI-powered voice-to-text PWA.
-
-# Stayfree
 
 An AI-powered voice-to-text Progressive Web App (PWA).
 
