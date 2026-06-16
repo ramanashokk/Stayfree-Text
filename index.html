@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0D0D0F" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="Stayfree Text" />
+  <title>Stayfree Text</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #root { height: 100%; }
+    body { background: #0D0D0F; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; color: #FFFFFF; font-family: system-ui, -apple-system, sans-serif; }
+    button { font-family: system-ui, -apple-system, sans-serif; cursor: pointer; }
+    @keyframes barPulse { 0%,100%{transform:scaleY(0.3);opacity:0.5} 50%{transform:scaleY(1);opacity:1} }
+    @keyframes ringExpand { 0%{transform:scale(1);opacity:0.4} 100%{transform:scale(1.9);opacity:0} }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .pill { border: none; outline: none; transition: all .15s; }
+    .pill:active { opacity: 0.7; }
+    .rec { outline: none; transition: all .18s; border: none; }
+    .rec:active:not(:disabled) { transform: scale(0.93); }
+    .btn { outline: none; transition: opacity .15s; }
+    .btn:active { opacity: 0.6; }
+    .overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); display:flex; align-items:flex-end; justify-content:center; z-index:100; animation:fadeIn 0.2s ease; }
+    .sheet { background:#1A1A1E; border-radius:24px 24px 0 0; padding:32px 24px 48px; width:100%; max-width:480px; border-top:1px solid rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const WORKER_URL = 'https://flow-proxy.sales003.workers.dev';
+    const WHATSAPP_NUMBER = '919999999999'; // Replace with your number
+
+    const CONTEXTS = [
+      { id: "message", label: "Message" },
+      { id: "email",   label: "Email"   },
+      { id: "slack",   label: "Slack"   },
+      { id: "document",label: "Doc"     },
+    ];
+
+    const CONTEXT_PROMPTS = {
+      message:  "a casual chat or text message. Keep it conversational and natural.",
+      email:    "the body of a professional email. Use appropriate tone and structure.",
+      slack:    "a Slack message. Concise, direct, professional but casual.",
+      document: "a formal document or report paragraph.",
+    };
+
+    const COMMANDS = [
+      "make this","make it","translate","shorter","longer",
+      "more formal","more casual","in hindi","in english","in french",
+      "summarize","rewrite","add bullets","bullet points","fix","remove",
+    ];
+
+    function isCommand(text, hasExisting) {
+      if (!hasExisting) return false;
+      const lower = text.toLowerCase().trim();
+      return lower.split(/\s+/).length < 15 &&
+        COMMANDS.some(c => lower.startsWith(c) || lower.includes(c));
+    }
+
+    function PricingSheet({ onClose }) {
+      const openWhatsApp = () => {
+        window.open('https://wa.me/' + WHATSAPP_NUMBER + '?text=Hi%2C%20I%20want%20to%20subscribe%20to%20Stayfree%20Text%20Premium', '_blank');
+      };
+      return (
+        <div className="overlay" onClick={onClose}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign:'center', marginBottom:24 }}>
+              <div style={{ fontSize:11, color:'#FF5200', letterSpacing:2, textTransform:'uppercase', marginBottom:8 }}>Premium</div>
+              <div style={{ fontSize:26, fontWeight:700, color:'#FFFFFF', marginBottom:4 }}>Unlimited cleanups</div>
+              <div style={{ fontSize:14, color:'rgba(255,255,255,0.5)', lineHeight:1.6 }}>No daily limits. Priority access.<br/>Works even when free tier is busy.</div>
+            </div>
+
+            <div style={{ background:'#0D0D0F', borderRadius:14, padding:'20px', marginBottom:24, border:'1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                <span style={{ fontSize:14, color:'rgba(255,255,255,0.7)' }}>Monthly</span>
+                <span style={{ fontSize:20, fontWeight:700, color:'#FFFFFF' }}>₹99 <span style={{ fontSize:13, fontWeight:400, color:'rgba(255,255,255,0.4)' }}>/mo</span></span>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ fontSize:14, color:'rgba(255,255,255,0.7)' }}>Yearly</span>
+                <div style={{ textAlign:'right' }}>
+                  <span style={{ fontSize:20, fontWeight:700, color:'#FF5200' }}>₹799 <span style={{ fontSize:13, fontWeight:400, color:'rgba(255,255,255,0.4)' }}>/yr</span></span>
+                  <div style={{ fontSize:11, color:'rgba(255,255,255,0.3)' }}>Save ₹389</div>
+                </div>
+              </div>
+            </div>
+
+            <button onClick={openWhatsApp} style={{ width:'100%', padding:'16px', borderRadius:14, border:'none', background:'#FF5200', color:'#FFFFFF', fontSize:15, fontWeight:700, marginBottom:12 }}>
+              Get Premium via WhatsApp
+            </button>
+            <button onClick={onClose} style={{ width:'100%', padding:'14px', borderRadius:14, border:'1.5px solid rgba(255,255,255,0.15)', background:'transparent', color:'rgba(255,255,255,0.5)', fontSize:14 }}>
+              Maybe later
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [isRecording, setIsRecording] = useState(false);
+      const [rawTranscript, setRawTranscript] = useState("");
+      const [cleanedText, setCleanedText] = useState("");
+      const [context, setContext] = useState("message");
+      const [status, setStatus] = useState("idle");
+      const [copied, setCopied] = useState(false);
+      const [supported, setSupported] = useState(true);
+      const [errorType, setErrorType] = useState(null);
+      const [showPricing, setShowPricing] = useState(false);
+
+      const recRef = useRef(null);
+      const finalRef = useRef("");
+      const interimRef = useRef("");
+      const recordingRef = useRef(false);
+      const cleanedRef = useRef("");
+      const contextRef = useRef("message");
+
+      useEffect(() => { cleanedRef.current = cleanedText; }, [cleanedText]);
+      useEffect(() => { contextRef.current = context; }, [context]);
+
+      useEffect(() => {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) { setSupported(false); return; }
+        const rec = new SR();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.maxAlternatives = 1;
+        rec.onresult = (event) => {
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+
+            if (event.results[i].isFinal) {
+              finalRef.current += transcript + " ";
+              interimRef.current = "";
+            } else {
+              interimRef.current = transcript;
+            }
+          }
+
+          setRawTranscript((finalRef.current + interimRef.current).trim());
+        };
+        rec.onend = () => { if (recordingRef.current) try { rec.start(); } catch {} };
+        recRef.current = rec;
+        return () => { recordingRef.current = false; rec.abort(); };
+      }, []);
+
+      const startRecording = () => {
+        finalRef.current = ""; interimRef.current = "";
+        setRawTranscript(""); setCleanedText("");
+        setErrorType(null);
+        setStatus("recording"); setIsRecording(true); recordingRef.current = true;
+        try { recRef.current?.start(); } catch {}
+      };
+
+      const stopAndProcess = async () => {
+        recordingRef.current = false; recRef.current?.stop(); setIsRecording(false);
+        const raw = finalRef.current.trim();
+        if (!raw) { setStatus("idle"); return; }
+        setStatus("processing");
+        const existing = cleanedRef.current;
+        const ctx = contextRef.current;
+        const isCmd = isCommand(raw, !!existing);
+        const messages = isCmd && existing
+          ? [
+              { role: "system", content: "Apply the user's instruction to the text. Return ONLY the modified text." },
+              { role: "user", content: 'Text:\n"' + existing + '"\n\nInstruction: ' + raw }
+            ]
+          : [
+              { role: "system", content: "Clean this raw voice transcript for use as " + CONTEXT_PROMPTS[ctx] + " Remove filler words (um, uh, like, you know, so, basically, right, anyway, etc.) and fix grammar. Do not add content. Return ONLY the cleaned text." },
+              { role: "user", content: raw }
+            ];
+        try {
+          const res = await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages, max_tokens: 1000, temperature: 0.3 })
+          });
+          if (res.status === 429) {
+            const data = await res.json();
+            setErrorType(data.error === 'daily_limit' ? 'daily_limit' : 'service_limit');
+            setStatus("error"); return;
+          }
+          const data = await res.json();
+          const text = data.choices?.[0]?.message?.content?.trim();
+          if (!text) throw new Error();
+          setCleanedText(text); setStatus("done");
+        } catch { setErrorType('generic'); setStatus("error"); }
+      };
+
+      const toggle = () => {
+        if (status === "processing") return;
+        isRecording ? stopAndProcess() : startRecording();
+      };
+
+      const copy = () => {
+        navigator.clipboard.writeText(cleanedText).catch(() => {});
+        setCopied(true); setTimeout(() => setCopied(false), 2000);
+      };
+
+      const reset = () => {
+        setCleanedText(""); setRawTranscript("");
+        finalRef.current = ""; interimRef.current = "";
+        setStatus("idle"); setErrorType(null);
+      };
+
+      const hint = !supported ? "Use Chrome on Android"
+        : status === "processing" ? "Cleaning your text..."
+        : isRecording ? "Tap to stop"
+        : status === "done" ? "Speak again or give a command"
+        : "Tap the mic to speak";
+
+      const BARS = [6, 12, 18, 12, 6];
+
+      const ErrorBox = () => {
+        if (!errorType) return null;
+        const isDailyLimit = errorType === 'daily_limit';
+        const isServiceLimit = errorType === 'service_limit';
+        return (
+          <div style={{ background: isDailyLimit ? 'rgba(255,82,0,0.08)' : '#1A1A1E', border: isDailyLimit ? '1.5px solid rgba(255,82,0,0.3)' : '1.5px solid rgba(255,255,255,0.1)', borderRadius:12, padding:'16px', marginBottom:0 }}>
+            <div style={{ fontSize:14, fontWeight:600, color:'#FFFFFF', marginBottom:6 }}>
+              {isDailyLimit ? "Daily limit reached" : isServiceLimit ? "Service busy" : "Something went wrong"}
+            </div>
+            <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', lineHeight:1.6, marginBottom: isDailyLimit ? 14 : 0 }}>
+              {isDailyLimit ? "You've used your 30 free cleanups today. Resets at midnight, or upgrade for unlimited." : isServiceLimit ? "Groq servers are busy. Try again in a few minutes." : "Check your connection and try again."}
+            </div>
+            {isDailyLimit && (
+              <button onClick={() => setShowPricing(true)} style={{ width:'100%', padding:'11px', borderRadius:10, border:'none', background:'#FF5200', color:'#FFFFFF', fontSize:13, fontWeight:600 }}>
+                Get Premium — Unlimited
+              </button>
+            )}
+          </div>
+        );
+      };
+
+      return (
+        <div style={{ minHeight:"100vh", background:"#0D0D0F", display:"flex", flexDirection:"column", alignItems:"center", padding:"32px 20px 48px" }}>
+
+          {showPricing && <PricingSheet onClose={() => setShowPricing(false)} />}
+
+          {/* Header */}
+          <div style={{ width:"100%", maxWidth:480, marginBottom:28, display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+            <div>
+              <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+                <span style={{ fontSize:22, fontWeight:700, color:"#FFFFFF" }}>Stayfree</span>
+                <span style={{ fontSize:22, fontWeight:300, color:"#FF5200" }}>Text</span>
+              </div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", letterSpacing:2, textTransform:"uppercase", marginTop:4 }}>
+                speak · clean · use
+              </div>
+            </div>
+            <button onClick={() => setShowPricing(true)} className="btn" style={{ padding:'8px 16px', borderRadius:20, border:'1.5px solid #FF5200', background:'rgba(255,82,0,0.08)', color:'#FF5200', fontSize:12, fontWeight:600 }}>
+              Premium
+            </button>
+          </div>
+
+          {/* Context pills */}
+          <div style={{ display:"flex", gap:8, marginBottom:20, width:"100%", maxWidth:480, flexWrap:"wrap" }}>
+            {CONTEXTS.map(c => (
+              <button key={c.id} className="pill" onClick={() => setContext(c.id)} style={{
+                padding:"8px 18px", borderRadius:24,
+                border: context===c.id ? "1.5px solid #FF5200" : "1.5px solid rgba(255,255,255,0.2)",
+                background: context===c.id ? "rgba(255,82,0,0.15)" : "transparent",
+                color: context===c.id ? "#FF5200" : "#FFFFFF",
+                fontSize:13, fontWeight: context===c.id ? 600 : 400,
+              }}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Output card */}
+          <div style={{ width:"100%", maxWidth:480, background:"#1A1A1E", borderRadius:16, border:"1.5px solid rgba(255,255,255,0.08)", padding:"20px", marginBottom:16, minHeight:180, display:"flex", flexDirection:"column", gap: errorType ? 16 : 0 }}>
+            {!cleanedText && status !== 'error' && (
+              <div style={{ color:"rgba(255,255,255,0.35)", fontSize:14, lineHeight:1.8, flex:1 }}>
+                {status==="recording" ? "🎤  Listening..." : status==="processing" ? "✨  Cleaning your text..." : "Your cleaned text appears here.\nSpeak naturally — fillers removed automatically."}
+              </div>
+            )}
+            {cleanedText && (<>
+              <div style={{ fontSize:15, lineHeight:1.8, color:"#FFFFFF", flex:1, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{cleanedText}</div>
+              <div style={{ display:"flex", gap:8, marginTop:16, justifyContent:"flex-end" }}>
+                <button className="btn" onClick={copy} style={{ padding:"7px 18px", borderRadius:8, border: copied ? "1.5px solid #FF5200" : "1.5px solid rgba(255,255,255,0.2)", background: copied ? "rgba(255,82,0,0.15)" : "transparent", color: copied ? "#FF5200" : "#FFFFFF", fontSize:13 }}>{copied ? "Copied ✓" : "Copy"}</button>
+                <button className="btn" onClick={reset} style={{ padding:"7px 18px", borderRadius:8, border:"1.5px solid rgba(255,255,255,0.2)", background:"transparent", color:"#FFFFFF", fontSize:13 }}>Clear</button>
+              </div>
+            </>)}
+            {status==="error" && <ErrorBox />}
+          </div>
+
+          {/* Raw transcript */}
+          {isRecording && rawTranscript && (
+            <div style={{ width:"100%", maxWidth:480, marginBottom:10, fontSize:12, color:"rgba(255,255,255,0.25)", lineHeight:1.6, padding:"0 4px", wordBreak:"break-word" }}>
+              {rawTranscript}
+            </div>
+          )}
+
+          {/* Record button */}
+          <div style={{ position:"relative", display:"flex", alignItems:"center", justifyContent:"center", marginTop:20, marginBottom:16 }}>
+            {isRecording && (
+              <div style={{ position:"absolute", width:84, height:84, borderRadius:"50%", border:"1.5px solid rgba(255,82,0,0.4)", animation:"ringExpand 1.5s ease-out infinite", pointerEvents:"none" }} />
+            )}
+            {isRecording && (
+              <div style={{ position:"absolute", right:100, display:"flex", alignItems:"center", gap:3, height:28 }}>
+                {BARS.map((h,i) => <div key={i} style={{ width:3, height:h, background:"#FF5200", borderRadius:2, animation:"barPulse " + (0.65+i*0.07) + "s ease-in-out " + (i*0.09) + "s infinite", transformOrigin:"center" }} />)}
+              </div>
+            )}
+            <button className="rec" onClick={toggle} disabled={!supported || status==="processing"} style={{ width:84, height:84, borderRadius:"50%", background: isRecording ? "#FF5200" : "#1A1A1E", border: isRecording ? "none" : "2px solid rgba(255,255,255,0.15)", cursor: !supported||status==="processing" ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", zIndex:1, boxShadow: isRecording ? "0 0 40px rgba(255,82,0,0.4)" : "none" }}>
+              {status==="processing" ? (
+                <div style={{ width:24, height:24, border:"2.5px solid rgba(255,255,255,0.15)", borderTopColor:"#FF5200", borderRadius:"50%", animation:"spin 0.7s linear infinite" }} />
+              ) : isRecording ? (
+                <div style={{ width:24, height:24, background:"#FFFFFF", borderRadius:5 }} />
+              ) : (
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                  <rect x="9" y="2" width="6" height="11" rx="3" fill="#FF5200"/>
+                  <path d="M5 11c0 3.866 3.134 7 7 7s7-3.134 7-7" stroke="#FF5200" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="12" y1="18" x2="12" y2="22" stroke="#FF5200" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="9" y1="22" x2="15" y2="22" stroke="#FF5200" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              )}
+            </button>
+            {isRecording && (
+              <div style={{ position:"absolute", left:100, display:"flex", alignItems:"center", gap:3, height:28 }}>
+                {BARS.map((h,i) => <div key={i} style={{ width:3, height:h, background:"#FF5200", borderRadius:2, animation:"barPulse " + (0.65+i*0.07) + "s ease-in-out " + ((i+2.5)*0.09) + "s infinite", transformOrigin:"center" }} />)}
+              </div>
+            )}
+          </div>
+
+          <div style={{ fontSize:13, color:"rgba(255,255,255,0.4)", marginTop:4 }}>{hint}</div>
+          {status==="done" && cleanedText && (
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", marginTop:14, maxWidth:280, textAlign:"center", lineHeight:1.8 }}>
+              Try: "make it shorter" · "more formal" · "translate to Hindi"
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
