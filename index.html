@@ -132,20 +132,15 @@
         const rec = new SR();
         rec.continuous = true;
         rec.interimResults = true;
-        rec.maxAlternatives = 1;
-        rec.onresult = (event) => {
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-
-            if (event.results[i].isFinal) {
-              finalRef.current += transcript + " ";
-              interimRef.current = "";
-            } else {
-              interimRef.current = transcript;
-            }
+        rec.onresult = (e) => {
+          let final = "", interim = "";
+          for (let i = 0; i < e.results.length; i++) {
+            if (e.results[i].isFinal) final += e.results[i][0].transcript + " ";
+            else interim += e.results[i][0].transcript;
           }
-
-          setRawTranscript((finalRef.current + interimRef.current).trim());
+          finalRef.current = final;
+          interimRef.current = interim;
+          setRawTranscript(final + interim);
         };
         rec.onend = () => { if (recordingRef.current) try { rec.start(); } catch {} };
         recRef.current = rec;
@@ -162,7 +157,7 @@
 
       const stopAndProcess = async () => {
         recordingRef.current = false; recRef.current?.stop(); setIsRecording(false);
-        const raw = finalRef.current.trim();
+        const raw = (finalRef.current.trim() || interimRef.current.trim());
         if (!raw) { setStatus("idle"); return; }
         setStatus("processing");
         const existing = cleanedRef.current;
